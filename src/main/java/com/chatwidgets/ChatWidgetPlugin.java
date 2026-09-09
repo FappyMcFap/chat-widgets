@@ -592,6 +592,7 @@ public class ChatWidgetPlugin extends Plugin {
             return;
         }
         message = message.trim();
+        message = client.macroExpand(message);
 
         // Emoji support: for emoji-eligible types that aren't chat commands, seed the stored body
         // from the message node (mutated in place by the RuneLite Emojis plugin to insert <img=N>)
