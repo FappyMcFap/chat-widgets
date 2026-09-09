@@ -14,6 +14,10 @@ import net.runelite.api.Client;
 import net.runelite.api.GameState;
 import net.runelite.api.MessageNode;
 import net.runelite.api.Point;
+import net.runelite.api.clan.ClanID;
+import net.runelite.api.clan.ClanMember;
+import net.runelite.api.clan.ClanSettings;
+import net.runelite.api.clan.ClanTitle;
 import net.runelite.api.events.ChatMessage;
 import net.runelite.api.events.GameStateChanged;
 import net.runelite.api.events.GameTick;
@@ -30,6 +34,7 @@ import net.runelite.client.config.ChatColorConfig;
 import net.runelite.client.events.ConfigChanged;
 import net.runelite.client.events.OverlayMenuClicked;
 import net.runelite.client.eventbus.Subscribe;
+import net.runelite.client.game.ChatIconManager;
 import net.runelite.client.plugins.Plugin;
 import net.runelite.client.plugins.PluginDescriptor;
 import net.runelite.client.plugins.PluginManager;
@@ -175,6 +180,9 @@ public class ChatWidgetPlugin extends Plugin {
 
     @Inject
     private ColorPickerManager colorPickerManager;
+
+    @Inject
+    private ChatIconManager chatIconManager;
 
     // Shared message pool
     private final CopyOnWriteArrayList<WidgetMessage> messages = new CopyOnWriteArrayList<>();
@@ -655,6 +663,25 @@ public class ChatWidgetPlugin extends Plugin {
                     }
                     messages.set(messages.size() - 1, mergedMsg);
                     return;
+                }
+            }
+        }
+
+        // Adds functionality to display clan chat icon in the widget
+        if (type == ChatMessageType.CLAN_CHAT) {
+            ClanSettings clanSettings = client.getClanSettings(ClanID.CLAN);
+            
+            if (clanSettings != null && sender != null) {
+                String cleanSenderName = sender.replaceAll("<img=\\d+>", "").trim();
+                ClanMember member = clanSettings.findMember(cleanSenderName);
+                if (member != null) {
+                    ClanTitle title = clanSettings.titleForRank(member.getRank());
+                    if (title != null) {
+                        int iconNumber = chatIconManager.getIconNumber(title);
+                        if (iconNumber != -1) {
+                            sender = "<img=" + iconNumber + ">" + sender;
+                        }
+                    }
                 }
             }
         }
