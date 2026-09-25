@@ -678,19 +678,17 @@ public class ChatWidgetPlugin extends Plugin {
             }
         }
 
-        // Adds functionality to display clan chat icon in the widget
-        if (type == ChatMessageType.CLAN_CHAT) {
-            ClanSettings clanSettings = client.getClanSettings(ClanID.CLAN);
-            if (clanSettings != null && sender != null) {
-                String cleanSenderName = IMG_TAG_PATTERN.matcher(sender).replaceAll("").trim();
-                ClanMember member = clanSettings.findMember(cleanSenderName);
-                if (member != null) {
-                    ClanTitle title = clanSettings.titleForRank(member.getRank());
-                    if (title != null) {
-                        int iconNumber = chatIconManager.getIconNumber(title);
-                        if (iconNumber != -1) {
-                            sender = "<img=" + iconNumber + ">" + sender;
-                        }
+        // Prepend the sender's clan rank icon for clan chat lines (main, guest, and GIM channels).
+        ClanSettings clanSettings = clanSettingsForType(type);
+        if (clanSettings != null && sender != null) {
+            String cleanSenderName = IMG_TAG_PATTERN.matcher(sender).replaceAll("").trim();
+            ClanMember member = clanSettings.findMember(cleanSenderName);
+            if (member != null) {
+                ClanTitle title = clanSettings.titleForRank(member.getRank());
+                if (title != null) {
+                    int iconNumber = chatIconManager.getIconNumber(title);
+                    if (iconNumber != -1) {
+                        sender = "<img=" + iconNumber + ">" + sender;
                     }
                 }
             }
@@ -936,6 +934,25 @@ public class ChatWidgetPlugin extends Plugin {
             return null;
         }
         return name.replace('\u00A0', ' ').trim();
+    }
+
+    /**
+     * The {@link ClanSettings} backing a clan-chat message type, used to resolve a sender's rank
+     * icon. Guest clan chat reads the guest settings; GIM clan chat the {@link ClanID#GROUP_IRONMAN}
+     * settings; ordinary clan chat the main clan. Returns {@code null} for non-clan types and when
+     * the relevant clan data isn't loaded.
+     */
+    private ClanSettings clanSettingsForType(ChatMessageType type) {
+        switch (type) {
+            case CLAN_CHAT:
+                return client.getClanSettings();
+            case CLAN_GUEST_CHAT:
+                return client.getGuestClanSettings();
+            case CLAN_GIM_CHAT:
+                return client.getClanSettings(ClanID.GROUP_IRONMAN);
+            default:
+                return null;
+        }
     }
 
     private String tryMergeMessages(String previousMessage, String newMessage) {
